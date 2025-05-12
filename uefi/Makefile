@@ -89,7 +89,7 @@ libuefi.lib: $(LIBOBJS)
 
 libuefi.a: $(LIBOBJS)
 	@rm $@ 2>/dev/null || true
-	$(AR) -frsv $@ $(LIBOBJS) >/dev/null
+	$(AR) -rsv $@ $(LIBOBJS) >/dev/null
 
 $(TARGET): $(addprefix $(OUTDIR),$(TARGET).so)
 ifneq ($(USE_GCC),)
