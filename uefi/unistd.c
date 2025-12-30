@@ -40,7 +40,17 @@ int usleep (unsigned long int __useconds)
 
 unsigned int sleep (unsigned int __seconds)
 {
-    BS->Stall((unsigned long int)__seconds * 1000000UL);
+    /* Issue 56: some real firmware is buggy and Stall doesn't work for large delays, so use a timer instead */
+    uint64_t usec = (uint64_t)__seconds * 1000000UL;
+    uintn_t index = 0;
+    efi_event_t timer_event;
+    efi_status_t status = status = BS->CreateEvent(EVT_TIMER, 0, NULL, NULL, &timer_event);
+    if(!EFI_ERROR(status)) {
+        BS->SetTimer(timer_event, TimerRelative, usec * 10UL);
+        BS->WaitForEvent(1, &timer_event, &index);
+        BS->CloseEvent(timer_event);
+    } else
+        BS->Stall(usec);
     return 0;
 }
 
