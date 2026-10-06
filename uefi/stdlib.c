@@ -43,18 +43,9 @@ int atoi(const char_t *s)
     return (int)atol(s);
 }
 
-int64_t atol(const char_t *s)
+int64_t atol(const char_t *__nptr)
 {
-    int64_t sign = 1;
-    if(!s || !*s) return 0;
-    if(*s == CL('-')) { sign = -1; s++; }
-    if(s[0] == CL('0')) {
-        if(s[1] == CL('x'))
-            return strtol(s + 2, NULL, 16) * sign;
-        if(s[1] >= CL('0') && s[1] <= CL('7'))
-            return strtol(s, NULL, 8) * sign;
-    }
-    return strtol(s, NULL, 10) * sign;
+    return strtol(__nptr, NULL, 10);
 }
 
 /* Shared scanning for strtol and strtoull. Parses the subject sequence the way
