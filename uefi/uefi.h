@@ -37,29 +37,47 @@
 /* #define UEFI_NO_TRACK_ALLOC */           /* do not track allocated buffers' size */
 /*** configuration ends ***/
 
+/* Fixed width types. Prefer the toolchain's <stdint.h>, every supported
+ * compiler ships one in freestanding mode too. The fallback below is only for
+ * a target that has none. Defining _STDINT_H ourselves would poison the system
+ * header and collide with it, because char is not the same type as
+ * __INT8_TYPE__. */
+#if defined(__has_include)
+#  if __has_include(<stdint.h>)
+#    define _UEFI_HAVE_STDINT 1
+#  endif
+#endif
+
+#ifdef _UEFI_HAVE_STDINT
+#include <stdint.h>
+#else
+typedef __INT8_TYPE__       int8_t;
+typedef __UINT8_TYPE__      uint8_t;
+typedef __INT16_TYPE__      int16_t;
+typedef __UINT16_TYPE__     uint16_t;
+typedef __INT32_TYPE__      int32_t;
+typedef __UINT32_TYPE__     uint32_t;
+typedef __INT64_TYPE__      int64_t;
+typedef __UINT64_TYPE__     uint64_t;
+typedef __UINTPTR_TYPE__    uintptr_t;
+#endif
+
+/* These come from <stdint.h>, but the fallback above has to provide them too,
+ * and C++ only exposes the macros unconditionally from C++11 on. */
+#ifndef INT64_MAX
+#define INT64_MAX   __INT64_MAX__
+#endif
+#ifndef INT64_MIN
+#define INT64_MIN   (-__INT64_MAX__ - 1)
+#endif
+#ifndef UINT64_MAX
+#define UINT64_MAX  __UINT64_MAX__
+#endif
+
 #ifdef  __cplusplus
 extern "C" {
 #endif
 
-/* get these from the compiler or the efi headers, only define if we have neither */
-#if !defined(_STDINT_H) && !defined(_GCC_STDINT_H) && !defined(_EFI_INCLUDE_)
-#define _STDINT_H
-typedef char                int8_t;
-typedef unsigned char       uint8_t;
-typedef short               int16_t;
-typedef unsigned short      uint16_t;
-typedef int                 int32_t;
-typedef unsigned int        uint32_t;
-#ifndef __clang__
-typedef long int            int64_t;
-typedef unsigned long int   uint64_t;
-typedef unsigned long int   uintptr_t;
-#else
-typedef long long           int64_t;
-typedef unsigned long long  uint64_t;
-typedef unsigned long long  uintptr_t;
-#endif
-#endif
 extern char c_assert1[sizeof(uint32_t) == 4  ? 1 : -1];
 extern char c_assert2[sizeof(uint64_t) == 8  ? 1 : -1];
 extern char c_assert3[sizeof(uintptr_t) == 8 ? 1 : -1];
