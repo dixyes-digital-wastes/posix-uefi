@@ -1,0 +1,6 @@
+# Build output. Upstream had no ignore file, so these ended up as untracked
+# noise next to the sources.
+*.o
+*.a
+tests/test_printf
+tests/test_strtol
