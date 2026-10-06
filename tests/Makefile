@@ -1,9 +1,8 @@
 # Tests for the parts of the library that do not need the firmware.
 #
-# strtol is pure code that decides whether a number in a configuration file is
-# a number, so it can be checked on the host in seconds. Anything that touches
-# the firmware has to be exercised by booting, which the project that consumes
-# this fork does.
+# The formatter and strtol are pure code, so they can be checked on the host in
+# seconds. Anything that touches the firmware has to be exercised by booting,
+# which the project that consumes this fork does.
 
 ifeq ($(origin CC),default)
 CC := clang
@@ -12,7 +11,15 @@ endif
 UEFI := ../uefi
 
 .PHONY: all check clean
-all: test_strtol
+all: test_printf test_strtol
+
+# printf.c declares the printf family, whose declarations clash with the host
+# libc, so the symbol under test is renamed and only the one implementation is
+# linked.
+test_printf: test_printf.c $(UEFI)/printf.c
+	$(CC) -std=gnu23 -O2 -Wall -Wextra \
+	      -Wno-incompatible-library-redeclaration \
+	      -Dvsnprintf=usVsnprintf -I$(UEFI) $^ -o $@
 
 # stdlib.c is linked whole, so the test supplies stubs for the firmware globals
 # that its unreached functions reference. The names under test are renamed so
@@ -26,7 +33,8 @@ test_strtol: test_strtol.c $(UEFI)/stdlib.c
 	      -I$(UEFI) $^ -o $@
 
 check: all
+	./test_printf
 	./test_strtol
 
 clean:
-	rm -f test_strtol
+	rm -f test_printf test_strtol
