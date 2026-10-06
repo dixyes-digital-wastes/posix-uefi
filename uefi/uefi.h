@@ -1332,6 +1332,8 @@ typedef int (*__compar_fn_t) (const void *, const void *);
 extern int atoi (const char_t *__nptr);
 extern int64_t atol (const char_t *__nptr);
 extern int64_t strtol (const char_t *__nptr, char_t **__endptr, int __base);
+extern int64_t strtoll (const char_t *__nptr, char_t **__endptr, int __base);
+extern uint64_t strtoull (const char_t *__nptr, char_t **__endptr, int __base);
 extern void *malloc (size_t __size);
 extern void *calloc (size_t __nmemb, size_t __size);
 extern void *realloc (void *__ptr, size_t __size);

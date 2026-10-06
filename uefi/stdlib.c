@@ -57,24 +57,123 @@ int64_t atol(const char_t *s)
     return strtol(s, NULL, 10) * sign;
 }
 
-int64_t strtol (const char_t *s, char_t **__endptr, int __base)
+/* Shared scanning for strtol and strtoull. Parses the subject sequence the way
+ * the standard describes it and returns its magnitude; the sign and an
+ * overflow past UINT64_MAX are reported back to the caller, which applies its
+ * own range. */
+static uint64_t __strtox(const char_t *__nptr, char_t **__endptr, int __base, int *__neg, boolean_t *__of)
 {
-    int64_t v=0, sign = 1;
-    if(!s || !*s) return 0;
-    if(*s == CL('-')) { sign = -1; s++; }
-    while(!(*s < CL('0') || (__base < 10 && *s >= __base + CL('0')) || (__base >= 10 && ((*s > CL('9') && *s < CL('A')) ||
-            (*s > CL('F') && *s < CL('a')) || *s > CL('f'))))) {
-        v *= __base;
-        if(*s >= CL('0') && *s <= (__base < 10 ? __base + CL('0') : CL('9')))
-            v += (*s)-CL('0');
-        else if(__base == 16 && *s >= CL('a') && *s <= CL('f'))
-            v += (*s)-CL('a')+10;
-        else if(__base == 16 && *s >= CL('A') && *s <= CL('F'))
-            v += (*s)-CL('A')+10;
-        s++;
+    const char_t *s, *afterSign, *digits;
+    uint64_t acc = 0;
+    int base = __base, d;
+
+    *__neg = 0;
+    *__of = 0;
+
+    if(!__nptr) {
+        if(__endptr) *__endptr = NULL;
+        return 0;
     }
+
+    /* An unsupported base is the one case where endptr is left untouched: the
+     * standard only fixes the return value and errno, and the C library does
+     * the same. */
+    if(base != 0 && (base < 2 || base > 36)) {
+        errno = EINVAL;
+        return 0;
+    }
+
+    s = __nptr;
+    while(*s == CL(' ') || *s == CL('\t') || *s == CL('\n') ||
+          *s == CL('\v') || *s == CL('\f') || *s == CL('\r'))
+        s++;
+
+    if(*s == CL('-')) { *__neg = 1; s++; }
+    else if(*s == CL('+')) s++;
+
+    afterSign = s;
+
+    /* Base 0 asks the constant's own prefix to pick the radix, and an explicit
+     * base 16 accepts the same prefix. */
+    if((base == 0 || base == 16) && s[0] == CL('0') && (s[1] == CL('x') || s[1] == CL('X'))) {
+        base = 16;
+        s   += 2;
+    } else if(base == 0) {
+        base = (s[0] == CL('0')) ? 8 : 10;
+    }
+
+    digits = s;
+
+    for(; ; s++) {
+        char_t c = *s;
+        if     (c >= CL('0') && c <= CL('9')) d = (int)(c - CL('0'));
+        else if(c >= CL('a') && c <= CL('z')) d = (int)(c - CL('a')) + 10;
+        else if(c >= CL('A') && c <= CL('Z')) d = (int)(c - CL('A')) + 10;
+        else break;
+        if(d >= base) break;
+        if(acc > (UINT64_MAX - (uint64_t)d) / (uint64_t)base) *__of = 1;
+        acc = acc * (uint64_t)base + (uint64_t)d;
+    }
+
+    /* A "0x" prefix with no digits after it is not part of the subject
+     * sequence, so back up and re-read just the leading zero. */
+    if(s == digits && s != afterSign) {
+        s      = afterSign;
+        base   = (base == 16) ? 16 : 8;
+        digits = s;
+        for(; ; s++) {
+            char_t c = *s;
+            if(c < CL('0') || c > CL('9') || (int)(c - CL('0')) >= base) break;
+            acc = acc * (uint64_t)base + (uint64_t)(c - CL('0'));
+        }
+    }
+
+    if(s == digits) {
+        /* Nothing converted, so report the start of the string. */
+        if(__endptr) *__endptr = (char_t*)__nptr;
+        return 0;
+    }
+
+    /* endptr marks the end of the subject sequence whether or not the value
+     * fitted, so it is set before the caller applies its range check. */
     if(__endptr) *__endptr = (char_t*)s;
-    return v * sign;
+    return acc;
+}
+
+int64_t strtol (const char_t *__nptr, char_t **__endptr, int __base)
+{
+    boolean_t of;
+    int neg;
+    uint64_t acc = __strtox(__nptr, __endptr, __base, &neg, &of);
+
+    /* The magnitude may reach INT64_MAX, or one more when negative. */
+    if(of || acc > (neg ? (uint64_t)INT64_MAX + 1 : (uint64_t)INT64_MAX)) {
+        errno = ERANGE;
+        return neg ? INT64_MIN : INT64_MAX;
+    }
+    return neg ? (int64_t)(0 - acc) : (int64_t)acc;
+}
+
+/* long long and long are both 64 bit on every target this library supports,
+ * so these share the implementation above. */
+int64_t strtoll (const char_t *__nptr, char_t **__endptr, int __base)
+{
+    return strtol(__nptr, __endptr, __base);
+}
+
+uint64_t strtoull (const char_t *__nptr, char_t **__endptr, int __base)
+{
+    boolean_t of;
+    int neg;
+    uint64_t acc = __strtox(__nptr, __endptr, __base, &neg, &of);
+
+    if(of) {
+        errno = ERANGE;
+        return UINT64_MAX;
+    }
+    /* A negative input wraps around, the standard calls for the value as if it
+     * had been negated as an unsigned integer. */
+    return neg ? (uint64_t)(0 - acc) : acc;
 }
 
 void *malloc (size_t __size)
