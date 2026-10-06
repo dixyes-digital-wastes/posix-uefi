@@ -230,13 +230,14 @@ Sets an environment variable by `name` with `data` of length `len`. On success r
 | getchar_ifany | non-blocking, returns 0 if there was no key press, UNICODE otherwise       |
 | putchar       | as usual, stdout only (no stream redirects)                                |
 
-String formating is limited; only supports padding via positive number prefixes, `%d`, `%i`, `%x`, `%X`, `%c`, `%s`, `%q` and
-`%p` (no `%e`, `%f`, `%g`, no asterisk and dollar). When `UEFI_NO_UTF8` is defined, then formating operates on wchar_t, so
-it also supports the non-standard `%S` (printing an UTF-8 string) and `%Q` (printing an escaped UTF-8 string). These
-functions don't allocate memory, but in return the total length of the output string cannot be longer than `BUFSIZ`
-(8k if you haven't defined otherwise), except for the variants which have a maxlen argument. For convenience, `%D` requires
-`efi_physical_address_t` as argument, and it dumps memory, 16 bytes or one line at once. With the padding modifier you can
-dump more lines, for example `%5D` gives you 5 lines (80 dumped bytes).
+String formating supports the `-`, `+`, space, `#` and `0` flags, width and precision (the `*` variants included), and the
+conversions `%d`, `%i`, `%u`, `%o`, `%x`, `%X`, `%c`, `%s` and `%p`. Floating point (`%e`, `%f`, `%g`) is not supported
+and emits nothing. The old non-standard `%q` (escaped string) and, with `UEFI_NO_UTF8`, `%S` and `%Q` conversions have
+been removed, and `%c` no longer encodes a value above 0x7f as UTF-8. These functions don't allocate memory, but in
+return the total length of the output string cannot be longer than `BUFSIZ` (8k if you haven't defined otherwise), except
+for the variants which have a maxlen argument. For convenience, `%D` requires `efi_physical_address_t` as argument, and
+it dumps memory, 16 bytes or one line at once. With the padding modifier you can dump more lines, for example `%5D` gives
+you 5 lines (80 dumped bytes).
 
 File open modes: `"r"` read, `"w"` write, `"a"` append. Because of UEFI peculiarities, `"wd"` creates directory.
 
