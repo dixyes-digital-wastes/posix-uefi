@@ -538,9 +538,12 @@ int snprintf(char_t *dst, size_t maxlen, const char_t* fmt, ...)
 int vprintf(const char_t* fmt, __builtin_va_list args)
 {
     int ret;
-    wchar_t dst[BUFSIZ];
+    /* Static: at BUFSIZ the two buffers come to 24K, which is more than a
+     * driver started by the shell has to spare on its stack. The printer is
+     * not reentrant, and nothing calls back into it from here. */
+    static wchar_t dst[BUFSIZ];
 #ifndef UEFI_NO_UTF8
-    char_t tmp[BUFSIZ];
+    static char_t tmp[BUFSIZ];
     ret = vsnprintf(tmp, BUFSIZ, fmt, args);
     mbstowcs(dst, tmp, BUFSIZ - 1);
 #else
@@ -562,8 +565,9 @@ int printf(const char_t* fmt, ...)
 
 int vfprintf (FILE *__stream, const char_t *__format, __builtin_va_list args)
 {
-    wchar_t dst[BUFSIZ];
-    char_t tmp[BUFSIZ];
+    /* See vprintf(): the same 24K of buffers, kept off the stack. */
+    static wchar_t dst[BUFSIZ];
+    static char_t tmp[BUFSIZ];
     uintn_t ret, i;
 #ifndef UEFI_NO_UTF8
     ret = (uintn_t)vsnprintf(tmp, BUFSIZ, __format, args);
