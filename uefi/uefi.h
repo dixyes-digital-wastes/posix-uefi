@@ -1407,6 +1407,9 @@ extern char_t *strstr (const char_t *__haystack, const char_t *__needle);
 extern char_t *strtok (char_t *__s, const char_t *__delim);
 extern char_t *strtok_r (char_t *__s, const char_t *__delim, char_t **__save_ptr);
 extern size_t strlen (const char_t *__s);
+extern size_t strnlen (const char_t *__s, size_t __maxlen);
+extern size_t strspn (const char_t *__s, const char_t *__accept);
+extern size_t strcspn (const char_t *__s, const char_t *__reject);
 
 /* sys/stat.h */
 #define S_IREAD    0400 /* Read by owner.  */

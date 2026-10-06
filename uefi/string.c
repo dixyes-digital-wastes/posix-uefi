@@ -260,3 +260,32 @@ size_t strlen (const char_t *__s)
     for(ret = 0; __s[ret]; ret++);
     return ret;
 }
+
+size_t strnlen (const char_t *__s, size_t __maxlen)
+{
+    size_t ret;
+
+    if(!__s) return 0;
+    for(ret = 0; ret < __maxlen && __s[ret]; ret++);
+    return ret;
+}
+
+size_t strspn (const char_t *__s, const char_t *__accept)
+{
+    size_t ret;
+
+    if(!__s || !__accept) return 0;
+    for(ret = 0; __s[ret]; ret++)
+        if(!strchr(__accept, __s[ret])) break;
+    return ret;
+}
+
+size_t strcspn (const char_t *__s, const char_t *__reject)
+{
+    size_t ret;
+
+    if(!__s || !__reject) return 0;
+    for(ret = 0; __s[ret]; ret++)
+        if(strchr(__reject, __s[ret])) break;
+    return ret;
+}
