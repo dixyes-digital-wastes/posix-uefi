@@ -1,0 +1,12 @@
+/*
+ * freestanding/ - standard headers for a freestanding EFI build.
+ *
+ * This directory is added to the include path ahead of the compiler's own
+ * headers only when building third party sources that were written against a
+ * hosted environment. Each shim maps onto declarations in <uefi.h>, which is
+ * the real interface, so nothing here has an implementation of its own.
+ *
+ * Only the headers that a freestanding build actually lacks are provided.
+ * <stdint.h>, <stddef.h> and <stdbool.h> come from the compiler and are used
+ * as is.
+ */

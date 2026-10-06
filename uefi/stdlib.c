@@ -167,6 +167,15 @@ uint64_t strtoull (const char_t *__nptr, char_t **__endptr, int __base)
     return neg ? (uint64_t)(0 - acc) : acc;
 }
 
+/* Backs the assert() defined in the freestanding shim headers. Report and
+ * then stop: there is no useful way to continue from a broken invariant this
+ * early. */
+void __assert_fail(const char *expr, const char *file, int line)
+{
+    printf("assertion failed: %s at %s:%d\n", expr, file, line);
+    abort();
+}
+
 void *malloc (size_t __size)
 {
     void *ret = NULL;
